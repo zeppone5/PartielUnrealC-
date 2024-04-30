@@ -13,6 +13,12 @@ class APartielGameMode : public AGameModeBase
 
 public:
 	APartielGameMode();
+
+	UPROPERTY(VisibleAnywhere)
+	int32 Score = 0;
+
+	UFUNCTION()
+	void AddScore(int32 Value);
 };
 
 

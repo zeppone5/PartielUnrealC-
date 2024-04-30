@@ -12,3 +12,11 @@ APartielGameMode::APartielGameMode()
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 }
+
+void APartielGameMode::AddScore(int32 Value)
+{
+	Score += Value;
+	//debug print message
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Score: " + FString::FromInt(Score)));
+
+}

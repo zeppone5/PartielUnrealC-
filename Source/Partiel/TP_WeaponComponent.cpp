@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
+
 // Sets default values for this component's properties
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
@@ -17,6 +18,20 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
 }
 
+//begin play
+void UTP_WeaponComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// find actor of type portal
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APortal::StaticClass(), FoundActors);
+	Portal1 = Cast<APortal>(FoundActors[0]);
+	Portal2 = Cast<APortal>(FoundActors[1]);
+
+	// Set the current portal to false
+	CurrentPortal = false;
+}
 
 void UTP_WeaponComponent::Fire()
 {
@@ -31,17 +46,53 @@ void UTP_WeaponComponent::Fire()
 		UWorld* const World = GetWorld();
 		if (World != nullptr)
 		{
-			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
-			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
+			//APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
+			//const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
+			//// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+			//const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
 	
-			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+			////Set Spawn Collision Handling Override
+			//FActorSpawnParameters ActorSpawnParams;
+			//ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 	
-			// Spawn the projectile at the muzzle
-			World->SpawnActor<APartielProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			//// Spawn the projectile at the muzzle
+			//World->SpawnActor<APartielProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+
+				// FHitResult will hold all data returned by our line collision query
+			FHitResult Hit;
+
+			// We set up a line trace from our current location to a point 1000cm ahead of us
+			FVector TraceStart = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 100;
+			FVector TraceEnd = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 1000000.0f;
+
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(GetOwner());
+
+			GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, TraceChannelProperty, QueryParams);
+
+			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Red, false, 5.0f, 0, 10.0f);
+			UE_LOG(LogTemp, Log, TEXT("Tracing line: %s to %s"), *TraceStart.ToCompactString(), *TraceEnd.ToCompactString());
+
+			if (Hit.bBlockingHit && IsValid(Hit.GetActor()))
+			{
+				UE_LOG(LogTemp, Log, TEXT("Trace hit actor: %s"), *Hit.GetActor()->GetName());
+				if (CurrentPortal)
+				{
+					Portal1->SetActorLocation(Hit.Location);
+				}
+				else
+				{
+					Portal2->SetActorLocation(Hit.Location);
+				}
+			}
+			else {
+				UE_LOG(LogTemp, Log, TEXT("No Actors were hit"));
+			}
+
+			//Bon j'ai un probleme d'orientation forward est pas ouf je crois il me faut le player controller mais pas le temps
+
+
 		}
 	}
 	
